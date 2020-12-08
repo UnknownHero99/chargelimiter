@@ -41,7 +41,7 @@ REGION = "eu" # us, ...
 START_CHARGING_PERCENTAGE = 40
 STOP_CHARGING_PERCENTAGE = 60
 SLEEP_TIME = 100
-FULL_CHARGE = 100
+#FULL_CHARGE = 100 # maybe add later
 #FULL_CHARGE_TIME =  # make this take time and then calculate to charge fully by that time
 
 
@@ -50,15 +50,29 @@ FULL_CHARGE = 100
 DEVICE_ID = '' # uncoment this line to get a list of all devices
 
 
-def start_charging(deviceID):
-    socket.turn_on()# maybe add reconnecting if needed
+def get_token(api):
+    logger.info("Getting a new token")
+    api.init(USERNAME, PASSWORD, REGION)
 
-def stop_charging(deviceID):
-    socket.turn_off()# maybe add reconnecting if needed
+
+
+def start_charging(socket, api):
+    try:
+        logger.info("Starting the charge")
+        socket.turn_on()
+    except:
+        get_token(api)
+
+def stop_charging(socket, api):
+    try:
+        logger.info("Stoping the charge")
+        socket.turn_off()# maybe add reconnecting if needed
+    except:
+        get_token(api)
 
 if __name__ == "__main__":
     api = TuyaApi()
-    api.init(USERNAME, PASSWORD, REGION)
+    get_token(api)
     if not DEVICE_ID:
         print(api.get_all_devices())
         sys.exit(0)
@@ -66,13 +80,12 @@ if __name__ == "__main__":
     socket = api.get_device_by_id(DEVICE_ID)
     while True:
         if battery_percentage() > STOP_CHARGING_PERCENTAGE and battery_charging():
-            logger.info("Stoping the charge")
-            stop_charging(DEVICE_ID)
+            stop_charging(socket,api)
         elif battery_percentage() < START_CHARGING_PERCENTAGE and not battery_charging():
-            logger.info("Starting the charge")
-            start_charging(DEVICE_ID)
+            start_charging(socket,api)
         logger.debug("Battery percentage at " + str(battery_percentage()))
         sleep(SLEEP_TIME)
+
 
     #plugged = "Plugged In" if plugged else "Not Plugged In"
     #print(percent+'% | '+plugged)
